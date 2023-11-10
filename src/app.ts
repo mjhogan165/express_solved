@@ -30,7 +30,7 @@ app.get("/dogs/:id", async (req, res) => {
         id: id,
       },
     })
-    .then((result) => {
+    .then((result: any) => {
       console.log(result);
       return result;
       // if (result === null) {
@@ -42,10 +42,10 @@ app.get("/dogs/:id", async (req, res) => {
 // function isDog(value: unknown): value is Dog {
 //   return (value as Dog) !== undefined;
 // }
-type Errors = {
-  code: number;
-  msg: string;
-};
+// type Errors = {
+//   code: number;
+//   msg: string;
+// };
 type NewDog = {
   age: number;
   description: string;
@@ -91,59 +91,58 @@ type NewDog = {
 
 //   return { code: 201, msg: "" };
 // };
-function testInput(body: NewDog): Errors {
-  const errors = {
-    code: 400,
-    msg: "",
-  };
+//function testInput(body: NewDog): string[] {
+function testInput<T>(body: T): string[] {
+  // const errors = {
+  //   code: 400,
+  //   msg: "",
+  // };
+  const errors: string[] = [];
   const requiredFields = [
     ["age", "number"],
     ["name", "string"],
     ["description", "string"],
     ["breed", "string"],
   ];
-  const inputFields: any = Object.entries(body);
-  const inputProps = Object.keys(body);
+  if (typeof body !== "object" || body === null) {
+    return ["invalid input"];
+  } else {
+    const inputFields: any = Object.entries(body);
+    const inputProps = Object.keys(body);
 
-  for (const reqField of requiredFields) {
-    const find = inputProps.find(
-      (field) => field === reqField[0]
-    );
-    // console.log({ reqKey: reqField, find: find })
-    if (inputFields.length < requiredFields && !find) {
-      return {
-        code: 400,
-        msg: `${reqField[0]} should be a ${reqField[1]}`,
-      };
+    for (const reqField of requiredFields) {
+      const find = inputProps.find(
+        (field) => field === reqField[0]
+      );
+      // console.log({ reqKey: reqField, find: find })
+      if (inputFields.length < requiredFields && !find) {
+        errors.push(
+          `${reqField[0]} should be a ${reqField[1]}`
+        );
+      }
+      if (!find) {
+        errors.push(`${reqField[0]} is not a valid key`);
+      }
     }
-    if (!find) {
-      return {
-        code: 400,
-        msg: `${reqField[0]} is not a valid key`,
-      };
+    for (const [key, value] of inputFields) {
+      switch (key) {
+        case "age":
+          if (typeof value !== "number") {
+            errors.push(`${key} should be a number`);
+          }
+          break;
+        case "description" || "name" || "breed":
+          if (typeof value !== "string") {
+            errors.push(`${key} should be a string`);
+          }
+          break;
+        default:
+          errors.push(`${key} is not a valid key`);
+          break;
+      }
     }
+    return errors;
   }
-  for (const [key, value] of inputFields) {
-    switch (key) {
-      case "age":
-        if (typeof value !== "number") {
-          errors.code = 400;
-          errors.msg = `${key} should be a number`;
-        }
-        break;
-      case "description" || "name" || "breed":
-        if (typeof value !== "string") {
-          errors.code = 400;
-          errors.msg = `${key} should be a string`;
-        }
-        break;
-      default:
-        errors.code = 400;
-        errors.msg = `${key} is not a valid key`;
-        break;
-    }
-  }
-  return errors;
 }
 // function isNewDog(dog: NewDog): dog is NewDog {
 //   return (dog as NewDog) !== undefined;
@@ -151,7 +150,7 @@ function testInput(body: NewDog): Errors {
 app.post("/dogs", async (req, res) => {
   const body = req.body;
   const errorCheck = testInput(req.body);
-  if (errorCheck.msg === "") {
+  if (errorCheck.length < 1) {
     const dog = await prisma.dog.create({
       data: {
         name: body.name,
@@ -163,10 +162,7 @@ app.post("/dogs", async (req, res) => {
     return res
       .status(201)
       .send({ msg: "dog created", dog: dog });
-  } else
-    return res
-      .status(errorCheck.code)
-      .send({ errors: [errorCheck.msg] });
+  } else return res.status(400).send(errorCheck);
 });
 
 // all your code should go above this line
