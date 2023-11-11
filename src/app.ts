@@ -47,6 +47,7 @@ function testInput<T>(body: T): string[] {
     ["description", "string"],
     ["breed", "string"],
   ];
+  const reqProps = ["age", "name", "description", "breed"];
   if (typeof body !== "object" || body === null) {
     return ["invalid input"];
   } else {
@@ -54,42 +55,53 @@ function testInput<T>(body: T): string[] {
     const inputProps = Object.keys(body);
     for (const reqField of requiredFields) {
       for (const inputField of inputFields) {
+        console.log(inputField);
         if (inputField[0] === reqField[0]) {
           switch (inputField[0]) {
             case "age":
               if (typeof inputField[1] !== "number") {
                 errors.push(
-                  `${inputField[0]} should be a number`
+                  String.raw`${inputField[0]} should be a numberc`
                 );
               }
               break;
             case "description":
               if (typeof inputField[1] !== "string") {
                 errors.push(
-                  `${inputField[0]} should be a string`
+                  String.raw`${inputField[0]} should be a string`
                 );
               }
               break;
             case "breed":
               if (typeof inputField[1] !== "string") {
                 errors.push(
-                  `${inputField[0]} should be a string`
+                  String.raw`${inputField[0]} should be a string`
                 );
               }
               break;
             case "name":
               if (typeof inputField[1] !== "string") {
                 errors.push(
-                  `${inputField[0]} should be a string`
+                  String.raw`${inputField[0]} should be a string`
                 );
               }
               break;
             default:
+              console.log(`default on ${inputField}`);
               errors.push(
-                `${inputField[0]} is not a valid key`
+                String.raw`${inputField[0]} is not a valid key`
               );
               break;
           }
+        } else if (
+          !reqProps.includes(inputField[0]) &&
+          !errors.includes(
+            String.raw`${inputField[0]} is not a valid key`
+          )
+        ) {
+          errors.push(
+            String.raw`${inputField[0]} is not a valid key`
+          );
         }
       }
     }
@@ -106,9 +118,13 @@ function testInput<T>(body: T): string[] {
         if (!check) {
           missing = key;
           if (missing && missing === "age") {
-            errors.push(`${missing} should be a number`);
+            errors.push(
+              String.raw`${missing} should be a number`
+            );
           } else if (missing) {
-            errors.push(`${missing} should be a number`);
+            errors.push(
+              String.raw`${missing} should be a string`
+            );
           }
         }
       }
@@ -120,22 +136,18 @@ function testInput<T>(body: T): string[] {
 app.post("/dogs", async (req, res) => {
   const body = req.body;
   const errorCheck = testInput(req.body);
+  const age = parseInt(body.age);
   if (errorCheck.length < 1) {
-    const dog = await prisma.dog.create({
+    await prisma.dog.create({
       data: {
         name: body.name,
-        age: parseInt(body.age),
+        age: age,
         description: body.description,
         breed: body.breed,
       },
     });
-    return (
-      res
-        .status(201)
-        // .send({ msg: "dog created", dog: dog });
-        .send("dog created")
-    );
-  } else return res.status(400).send(errorCheck);
+    return res.status(201).send("dog created");
+  } else return res.status(400).json(errorCheck);
 });
 
 // all your code should go above this line
