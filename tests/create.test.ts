@@ -143,6 +143,7 @@ describe("POST /dogs", () => {
       id: "123",
     };
     const { data } = await post(`/dogs`, createData);
+    console.log(data);
 
     for (const key of ["id", "cheese"]) {
       expect(data.errors).toContain(
